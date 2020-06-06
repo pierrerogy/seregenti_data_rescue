@@ -13,7 +13,7 @@ species_list <-
   strsplit(file_list,"_") %>% 
   map(1) %>% 
   ## Remove apostrophe from Grant's and Thopmson's
-  lapply(gsub, pattern="'", replacement="") %>% 
+  lapply(gsub, pattern = "'", replacement = "") %>% 
   ## Convert to vector
   flatten_chr()
 
@@ -41,9 +41,10 @@ data_list$Buffalo <-
   data_list$Buffalo %>% 
   mutate(migrant_resident = "R")
 
-# Save of species names
+# Save list of species names
 species_list <- 
   data_list$species
+  
 ## Remove it from data_list
 data_list <- 
   data_list[names(data_list) != "species"]
@@ -58,7 +59,7 @@ for(i in 1:length(data_list)){
   colnames(data_list[[i]]) <- 
     c("year",
       "month",
-      "species",
+      "common_name",
       "newborn",
       "juvenile",
       "female",
@@ -68,7 +69,7 @@ for(i in 1:length(data_list)){
   ## Put species column first, and remove total column
   data_list[[i]] <- 
     data_list[[i]] %>% 
-    relocate(species, .before = year) %>% 
+    relocate(common_name, .before = year) %>% 
     dplyr::select(-total)
   ## Migrant and resident wildebeests in two different data sets, include this difference in names
   ifelse(names(data_list)[i] == "Wildebeest" & data_list[[i]]$migrant_resident == "M",
@@ -89,8 +90,7 @@ output_add<-
   data.frame()
 output_remove <-
   data.frame()
-
-## Write a loop that will find those rows, add to corresponding data frame, and concatenate if needed
+## Loop that will find those rows, add to corresponding data frame, and concatenate if needed
 for(i in 1:nrow(data_list$Wildebeest_migrant)){
   ### First row to be compared    
   first <- 
@@ -134,17 +134,52 @@ for(i in 1:nrow(data_list$Wildebeest_migrant)){
       else 
         next ### If nothing wrong just move on to the next row
   }    }
-
 ## Briefly check there is nothing wrong in the values
 View(output_add)
 View(output_remove)
-
-## Implement changes in the wildebeest
+## Implement changes in the data frame
 data_list$Wildebeest_migrant <- 
   data_list$Wildebeest_migrant %>% 
   anti_join(output_remove) %>% 
   bind_rows(output_add)
 
 
-#check that years have not been removed, unqiue values..,  nrow per year...
-# empty cells in wildebeest resident
+# Compile all data in single dataframe
+data_compiled <- 
+  data.frame()
+for(i in 1:length(data_list)){
+  data_compiled <- 
+    rbind(data_compiled, data_list[[i]])
+}
+
+# Common names have to match
+data_compiled$common_name[data_compiled$common_name == "Waterbuck"] <- 
+  "Defassa waterbuck"
+data_compiled$common_name[data_compiled$common_name == "Kongoni"] <- 
+  "Coke's kongoni"
+ 
+
+# Add latin names, change column orders and add sampling type column
+data_compiled <- 
+  data_compiled %>% 
+  left_join(species_list) %>% 
+  relocate(order, family, genus, specific_epithet, .before = common_name) %>% 
+  mutate(sampling_type = ifelse(!is.na(newborn) & !is.na(juvenile) & !is.na(female) & is.na(unid_adult),
+                                "njf",
+                                ifelse(!is.na(newborn) & !is.na(juvenile) & is.na(female) & !is.na(unid_adult),
+                                       "nja",
+                                       ifelse(!is.na(newborn) & is.na(juvenile) & !is.na(female) & is.na(unid_adult),
+                                              "nf",
+                                              ifelse(!is.na(newborn) & is.na(juvenile) & is.na(female) & !is.na(unid_adult),
+                                                     "na",
+                                                     ifelse(is.na(newborn) & !is.na(juvenile) & !is.na(female) & is.na(unid_adult),
+                                                            "jf",
+                                                            ifelse(is.na(newborn) & !is.na(juvenile) & is.na(female) & !is.na(unid_adult),
+                                                                   "ja", "problem")))))))
+
+# Save data in txt format
+write.table(data_compiled,
+            "output_data/rogy_sinclair_serengeti_ungulates.txt",
+            sep = "\t",
+            row.names=FALSE)
+
