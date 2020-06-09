@@ -60,7 +60,7 @@ for(i in 1:length(data_list)){
     c("year",
       "month",
       "common_name",
-      "newborn",
+      "infant",
       "juvenile",
       "female",
       "unid_adult",
@@ -79,10 +79,23 @@ for(i in 1:length(data_list)){
          next))
 }
 
-# Eland female data has missing values, as field identification can be tedious, so remove values (preserved in unid_adult)
+# Eland female data have missing values, as field identification can be tedious, so remove values (preserved in unid_adult)
 data_list$Eland <- 
   data_list$Eland %>% 
   mutate(female = NA)
+
+# Ostrich data include males in unid_adult column, empty column because unecessary here
+data_list$Ostrich <- 
+  data_list$Ostrich %>% 
+  mutate(unid_adult = NA)
+
+# Ostrich data has NA instead of 0 for females in 2000
+data_list$Ostrich$female[is.na(data_list$Ostrich$female)] <- 
+  0
+
+# Wildebeest resident has NA instead of 0 for some years in November and December
+data_list$Wildebeest_resident$infant[data_list$Wildebeest_resident$month == 11] <- 
+  0
 
 # Problem of duplicate rows in migratory wildebeest
 ## Create two data frames, one for concatenated rows to add to data later, and one with rows to remove
@@ -107,17 +120,17 @@ for(i in 1:nrow(data_list$Wildebeest_migrant)){
       ### Duplicates are ros were the yera-month-female value combination is spread across several rows
       ifelse(first$year == second$year & first$month == second$month & first$female == second$female, 
              ### Problem 1: both non-adult rows empty in first row
-              ifelse(is.na(first$newborn) & is.na(first$juvenile), 
+              ifelse(is.na(first$infant) & is.na(first$juvenile), 
                     output_remove <- 
                       rbind(output_remove, first), ### Add to rows to remove
                     ### Problem 2: both non-adult rows empty in second row
-                    ifelse(is.na(second$newborn) & is.na(second$juvenile), 
+                    ifelse(is.na(second$infant) & is.na(second$juvenile), 
                            output_remove <- 
                              rbind(output_remove, second), ### Add to row to remove
-                           ### Problem 3: same sample divided in two rows (e.g. one with newborn + female, other juvenile + female)
-                           ifelse(is.na(first$newborn) & !is.na(second$newborn), ### Case 1
-                                  c(new_row$newborn <- 
-                                    second$newborn, ### Add non-NA value
+                           ### Problem 3: same sample divided in two rows (e.g. one with infant + female, other juvenile + female)
+                           ifelse(is.na(first$infant) & !is.na(second$infant), ### Case 1
+                                  c(new_row$infant <- 
+                                    second$infant, ### Add non-NA value
                                     output_add <- 
                                       rbind(output_add, new_row), ### Add to list of rows to add
                                     output_remove <- 
@@ -164,22 +177,29 @@ data_compiled <-
   data_compiled %>% 
   left_join(species_list) %>% 
   relocate(order, family, genus, specific_epithet, .before = common_name) %>% 
-  mutate(sampling_type = ifelse(!is.na(newborn) & !is.na(juvenile) & !is.na(female) & is.na(unid_adult),
-                                "njf",
-                                ifelse(!is.na(newborn) & !is.na(juvenile) & is.na(female) & !is.na(unid_adult),
-                                       "nja",
-                                       ifelse(!is.na(newborn) & is.na(juvenile) & !is.na(female) & is.na(unid_adult),
-                                              "nf",
-                                              ifelse(!is.na(newborn) & is.na(juvenile) & is.na(female) & !is.na(unid_adult),
-                                                     "na",
-                                                     ifelse(is.na(newborn) & !is.na(juvenile) & !is.na(female) & is.na(unid_adult),
-                                                            "jf",
-                                                            ifelse(is.na(newborn) & !is.na(juvenile) & is.na(female) & !is.na(unid_adult),
-                                                                   "ja", "problem")))))))
+  mutate(sampling_type = ifelse(!is.na(infant) & !is.na(juvenile) & !is.na(female) & is.na(unid_adult),
+                                "ijf",
+                                ifelse(!is.na(infant) & !is.na(juvenile) & is.na(female) & !is.na(unid_adult),
+                                       "ija",
+                                       ifelse(!is.na(infant) & is.na(juvenile) & !is.na(female) & is.na(unid_adult),
+                                              "if",
+                                              ifelse(!is.na(infant) & is.na(juvenile) & is.na(female) & !is.na(unid_adult),
+                                                     "ia",
+                                                     ifelse(is.na(infant) & !is.na(juvenile) & !is.na(female) & is.na(unid_adult),
+                                                            "if",
+                                                            ifelse(is.na(infant) & !is.na(juvenile) & is.na(female) & !is.na(unid_adult),
+                                                                   "ia", "problem"))))))) ## to make sure there are no hidden errors
 
 # Save data in txt format
 write.table(data_compiled,
             "output_data/rogy_sinclair_serengeti_ungulates.txt",
             sep = "\t",
-            row.names=FALSE)
+            row.names = F)
+
+# Read data to make sure it worked
+data_check <- 
+  read.delim("output_data/rogy_sinclair_serengeti_ungulates.txt", 
+             header = T, 
+             sep = "\t",
+             stringsAsFactors = F)
 
