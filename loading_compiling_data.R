@@ -186,9 +186,9 @@ data_compiled <-
                                               ifelse(!is.na(infant) & is.na(juvenile) & is.na(female) & !is.na(unid_adult),
                                                      "ia",
                                                      ifelse(is.na(infant) & !is.na(juvenile) & !is.na(female) & is.na(unid_adult),
-                                                            "if",
+                                                            "jf",
                                                             ifelse(is.na(infant) & !is.na(juvenile) & is.na(female) & !is.na(unid_adult),
-                                                                   "ia", "problem"))))))) ## to make sure there are no hidden errors
+                                                                   "ja", "problem"))))))) ## to make sure there are no hidden errors
 
 # Save data in txt format
 write.table(data_compiled,
