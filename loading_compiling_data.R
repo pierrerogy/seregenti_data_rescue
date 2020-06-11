@@ -93,9 +93,12 @@ data_list$Ostrich <-
 data_list$Ostrich$female[is.na(data_list$Ostrich$female)] <- 
   0
 
-# Wildebeest resident has NA instead of 0 for some years in November and December
-data_list$Wildebeest_resident$infant[data_list$Wildebeest_resident$month == 11] <- 
+# Wildebeest have NA instead of 0 for some years in November and December
+data_list$Wildebeest_resident$infant[which(is.na(data_list$Wildebeest_resident$infant)) & (data_list$Wildebeest_resident$month == 11 | data_list$Wildebeest_resident$month == 12)] <- 
   0
+data_list$Wildebeest_migrant$infant[which(is.na(data_list$Wildebeest_migrant$infant)) & (data_list$Wildebeest_migrant$month == 11 | data_list$Wildebeest_migrant$month == 12)] <- 
+  0
+
 
 # Problem of duplicate rows in migratory wildebeest
 ## Create two data frames, one for concatenated rows to add to data later, and one with rows to remove
