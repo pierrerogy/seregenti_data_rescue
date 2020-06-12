@@ -41,9 +41,24 @@ data_list$Buffalo <-
   data_list$Buffalo %>% 
   mutate(migrant_resident = "R")
 
-# Save list of species names
+# Save list of species names, add naming authority
 species_list <- 
-  data_list$species
+  data_list$species %>% 
+  mutate(naming_authority = 
+           ifelse(specific_epithet == "caffer", "(Sparrman, 1779)",
+                  ifelse(specific_epithet == "oryx", "(Pallas, 1766)",
+                         ifelse(specific_epithet == "africana", "(Blumenbach, 1797)",
+                                ifelse(specific_epithet == "camelopardalus", "(Brisson, 1772)",
+                                       ifelse(specific_epithet == "granti", "(Brooke, 1872)",
+                                              ifelse(specific_epithet == "melampus", "(Lichtenstein, 1812)",
+                                                     ifelse(specific_epithet == "buselaphus", "(Pallas, 1766)",
+                                                            ifelse(specific_epithet == "camelus", "(Linnaeus, 1758)",
+                                                                   ifelse(specific_epithet == "thomsonii", "(Günther, 1884)",
+                                                                          ifelse(specific_epithet == "lunatus", "(Burchell, 1824)",
+                                                                                 ifelse(specific_epithet == "africanus", "(Gmelin, 1788)",
+                                                                                        ifelse(specific_epithet == "defassa", "(Rüppell, 1835)",
+                                                                                               ifelse(specific_epithet == "taurinus", "(Burchell, 1823)",
+                                                                                                      "(Boddaert, 1785)"))))))))))))))
   
 ## Remove it from data_list
 data_list <- 
@@ -99,6 +114,11 @@ data_list$Wildebeest_resident$infant[which(is.na(data_list$Wildebeest_resident$i
 data_list$Wildebeest_migrant$infant[which(is.na(data_list$Wildebeest_migrant$infant)) & (data_list$Wildebeest_migrant$month == 11 | data_list$Wildebeest_migrant$month == 12)] <- 
   0
 
+# Two data entry errors in month column for migratory wildebeest
+data_list$Wildebeest_migrant$month[data_list$Wildebeest_migrant$year == 1978] <- 
+  5
+data_list$Wildebeest_migrant$month[data_list$Wildebeest_migrant$year == 1980] <- 
+  5
 
 # Problem of duplicate rows in migratory wildebeest
 ## Create two data frames, one for concatenated rows to add to data later, and one with rows to remove
@@ -175,11 +195,11 @@ data_compiled$common_name[data_compiled$common_name == "Kongoni"] <-
   "Coke's kongoni"
  
 
-# Add latin names, change column orders and add sampling type column
+# Add latin names, change column orders and add sampling type and sampling method columns
 data_compiled <- 
   data_compiled %>% 
   left_join(species_list) %>% 
-  relocate(order, family, genus, specific_epithet, .before = common_name) %>% 
+  relocate(order, family, genus, specific_epithet, naming_authority, .before = common_name) %>% 
   mutate(sampling_type = ifelse(!is.na(infant) & !is.na(juvenile) & !is.na(female) & is.na(unid_adult),
                                 "ijf",
                                 ifelse(!is.na(infant) & !is.na(juvenile) & is.na(female) & !is.na(unid_adult),
@@ -191,7 +211,14 @@ data_compiled <-
                                                      ifelse(is.na(infant) & !is.na(juvenile) & !is.na(female) & is.na(unid_adult),
                                                             "jf",
                                                             ifelse(is.na(infant) & !is.na(juvenile) & is.na(female) & !is.na(unid_adult),
-                                                                   "ja", "problem"))))))) ## to make sure there are no hidden errors
+                                                                   "ja", "problem"))))))) %>% ## to make sure there are no hidden errors 
+  mutate(sampling_method = ifelse(specific_epithet %in% c("granti", "africana", "oryx", "camelus", "thomsonii"), "method_2",
+                                  ifelse((specific_epithet == "taurinus" & 1926 <= year & year <= 1933) | 
+                                           (specific_epithet == "camelopardalus" & 1926 <= year & year <= 1933) | 
+                                           (specific_epithet == "caffer" & 1965 <= year & year <= 1973),
+                                         "method_3", "method_1")))
+    
+
 
 # Save data in txt format
 write.table(data_compiled,
