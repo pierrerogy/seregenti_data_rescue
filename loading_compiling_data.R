@@ -233,13 +233,13 @@ data_compiled <-
 
 # Save data in txt format
 write.table(data_compiled,
-            "output_data/rogy_sinclair_serengeti_ungulates.txt",
+            "compiled_data/rogy_sinclair_serengeti_ungulates.txt",
             sep = "\t",
             row.names = F)
 
 # Read data to make sure it worked
 data_check <- 
-  read.delim("output_data/rogy_sinclair_serengeti_ungulates.txt", 
+  read.delim("compiled_data/rogy_sinclair_serengeti_ungulates.txt", 
              header = T, 
              sep = "\t",
              stringsAsFactors = F)
