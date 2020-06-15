@@ -120,21 +120,23 @@ data_list$Wildebeest_migrant$month[data_list$Wildebeest_migrant$year == 1978] <-
 data_list$Wildebeest_migrant$month[data_list$Wildebeest_migrant$year == 1980] <- 
   5
 
-# Problem of duplicate rows in migratory wildebeest
-## Create two data frames, one for concatenated rows to add to data later, and one with rows to remove
-output_add<-  
+# Problem of duplicate rows in several species
+## Create one dataframe to store rows to remove and one o store rows to add at the end
+output_remove <- 
   data.frame()
-output_remove <-
+output_add <- 
   data.frame()
+## Loop that will examine all species separately
+for(data in data_list){
 ## Loop that will find those rows, add to corresponding data frame, and concatenate if needed
-for(i in 1:nrow(data_list$Wildebeest_migrant)){
+for(i in 1:nrow(data)){
   ### First row to be compared    
   first <- 
-        data_list$Wildebeest_migrant[i,]
-  for(j in 1:nrow(data_list$Wildebeest_migrant)){
+    data[i,]
+  for(j in 1:nrow(data)){
     ### Second row to be compared
     second <- 
-      data_list$Wildebeest_migrant[j,]
+      data[j,]
     new_row <- 
       first
     ### This if statement is to make sure the same row is not compared to itself, and all comparisons happen once
@@ -143,7 +145,7 @@ for(i in 1:nrow(data_list$Wildebeest_migrant)){
       ### Duplicates are ros were the yera-month-female value combination is spread across several rows
       ifelse(first$year == second$year & first$month == second$month & first$female == second$female, 
              ### Problem 1: both non-adult rows empty in first row
-              ifelse(is.na(first$infant) & is.na(first$juvenile), 
+             ifelse(is.na(first$infant) & is.na(first$juvenile), 
                     output_remove <- 
                       rbind(output_remove, first), ### Add to rows to remove
                     ### Problem 2: both non-adult rows empty in second row
@@ -153,7 +155,7 @@ for(i in 1:nrow(data_list$Wildebeest_migrant)){
                            ### Problem 3: same sample divided in two rows (e.g. one with infant + female, other juvenile + female)
                            ifelse(is.na(first$infant) & !is.na(second$infant), ### Case 1
                                   c(new_row$infant <- 
-                                    second$infant, ### Add non-NA value
+                                      second$infant, ### Add non-NA value
                                     output_add <- 
                                       rbind(output_add, new_row), ### Add to list of rows to add
                                     output_remove <- 
@@ -166,18 +168,27 @@ for(i in 1:nrow(data_list$Wildebeest_migrant)){
                                            output_remove <- 
                                              rbind(output_remove, first, second)), ### Add to list of rows to remove
                                          print(c(first, second)))))), 
-                    next)} ### If i >= j, move on to next value of j
-      else 
-        next ### If nothing wrong just move on to the next row
-  }    }
+             next)} ### If i >= j, move on to next value of j
+    else 
+      next ### If nothing wrong just move on to the next row
+  }    } 
+  }
 ## Briefly check there is nothing wrong in the values
-View(output_add)
 View(output_remove)
+View(output_add)
+
 ## Implement changes in the data frame
+data_list$Topi <- 
+  data_list$Topi %>% 
+  anti_join(output_remove) %>% 
+  bind_rows(output_add %>% 
+              filter(common_name == "Topi"))
 data_list$Wildebeest_migrant <- 
   data_list$Wildebeest_migrant %>% 
   anti_join(output_remove) %>% 
-  bind_rows(output_add)
+  bind_rows(output_add %>% 
+              filter(common_name == "Wildebeest"))
+
 
 
 # Compile all data in single dataframe
