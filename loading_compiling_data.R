@@ -1,4 +1,4 @@
-# Loading data
+# Loading and compiling data
 
 # Load packages
 library(readxl)
@@ -229,8 +229,6 @@ data_compiled <-
                                            (specific_epithet == "caffer" & 1965 <= year & year <= 1973),
                                          "method_3", "method_1")))
     
-
-
 # Save data in txt format
 write.table(data_compiled,
             "compiled_data/rogy_sinclair_serengeti_ungulates.txt",
@@ -243,4 +241,3 @@ data_check <-
              header = T, 
              sep = "\t",
              stringsAsFactors = F)
-
