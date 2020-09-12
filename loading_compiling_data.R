@@ -15,7 +15,9 @@ species_list <-
   ## Remove apostrophe from Grant's and Thopmson's
   lapply(gsub, pattern = "'", replacement = "") %>% 
   ## Convert to vector
-  flatten_chr()
+  flatten_chr() %>% 
+  ## Update common name of Coke's hartebeest
+  recode("Kongoni" = "Hartebeest")
 
 # Make empty list to be filled with data
 data_list <- 
@@ -36,19 +38,33 @@ data_list$Grants <-
   data.frame() %>% 
   dplyr::select(-Male)
 
-# Buffalo missing their residency status
+# Buffalo missing their residency status and month of sampling
 data_list$Buffalo <- 
   data_list$Buffalo %>% 
-  mutate(migrant_resident = "R")
+  mutate(migrant_resident = "R",
+         Month = 5)
 
-# Save list of species names, add naming authority
+# Update name of Hartebeest
+data_list$Hartebeest <- 
+  data_list$Hartebeest %>% 
+  mutate(Species = "Hartebeest")
+data_list$species <- 
+  data_list$species %>% 
+  mutate(common_name =
+          ifelse(common_name == "Coke's kongoni", "Coke's hartebeest", 
+                 common_name ))
+
+# Save list of species names, add naming authority and updating scientific name of giraffe
 species_list <- 
   data_list$species %>% 
+  mutate(specific_epithet =
+    ifelse(specific_epithet == "camelopardalus", "camelopardalus tippelskirchi", 
+           specific_epithet)) %>% 
   mutate(naming_authority = 
            ifelse(specific_epithet == "caffer", "(Sparrman, 1779)",
                   ifelse(specific_epithet == "oryx", "(Pallas, 1766)",
                          ifelse(specific_epithet == "africana", "(Blumenbach, 1797)",
-                                ifelse(specific_epithet == "camelopardalus", "(Brisson, 1772)",
+                                ifelse(specific_epithet == "camelopardalus tippelskirchi", "(Brisson, 1772)",
                                        ifelse(specific_epithet == "granti", "(Brooke, 1872)",
                                               ifelse(specific_epithet == "melampus", "(Lichtenstein, 1812)",
                                                      ifelse(specific_epithet == "buselaphus", "(Pallas, 1766)",
@@ -103,6 +119,14 @@ data_list$Eland <-
 data_list$Ostrich <- 
   data_list$Ostrich %>% 
   mutate(unid_adult = NA)
+
+# Topi month data need to be updated
+data_list$Topi <- 
+  data_list$Topi %>% 
+  mutate(month =
+           ifelse(!is.na(data_list$Topi$juvenile), 1,
+                 3))
+  
 
 # Ostrich data has NA instead of 0 for females in 2000
 data_list$Ostrich$female[is.na(data_list$Ostrich$female)] <- 
@@ -202,8 +226,8 @@ for(i in 1:length(data_list)){
 # Common names have to match
 data_compiled$common_name[data_compiled$common_name == "Waterbuck"] <- 
   "Defassa waterbuck"
-data_compiled$common_name[data_compiled$common_name == "Kongoni"] <- 
-  "Coke's kongoni"
+data_compiled$common_name[data_compiled$common_name == "Hartebeest"] <- 
+  "Coke's hartebeest"
  
 
 # Add latin names, change column orders and add sampling type and sampling method columns
@@ -225,7 +249,7 @@ data_compiled <-
                                                                    "ja", "problem"))))))) %>% ## to make sure there are no hidden errors 
   mutate(sampling_method = ifelse(specific_epithet %in% c("granti", "africana", "oryx", "camelus", "thomsonii"), "method_2",
                                   ifelse((specific_epithet == "taurinus" & 1926 <= year & year <= 1933) | 
-                                           (specific_epithet == "camelopardalus" & 1926 <= year & year <= 1933) | 
+                                           (specific_epithet == "camelopardalus tippelskirchi" & 1926 <= year & year <= 1933) | 
                                            (specific_epithet == "caffer" & 1965 <= year & year <= 1973),
                                          "method_3", "method_1")))
     
@@ -241,3 +265,4 @@ data_check <-
              header = T, 
              sep = "\t",
              stringsAsFactors = F)
+
